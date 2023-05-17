@@ -29,10 +29,22 @@ router_eth_abi = json.load(open('./abis/router_eth_abi.json'))
 stargate_arbitrum_router_contract = arbitrum_w3.eth.contract(address=stargate_arbitrum_address, abi=router_abi)
 stargate_optimism_router_contract = optimism_w3.eth.contract(address=stargate_optimism_address, abi=router_abi)
 
-stargate_arbitrum_router_eth_contract = arbitrum_w3.eth.contract(address=stargate_arbitrum_eth_address,
-                                                                 abi=router_eth_abi)
-stargate_optimism_router_eth_contract = optimism_w3.eth.contract(address=stargate_optimism_eth_address,
-                                                                 abi=router_eth_abi)
+stargate_arbitrum_router_eth_contract = arbitrum_w3.eth.contract(
+    address=stargate_arbitrum_eth_address,
+    abi=router_eth_abi
+)
+stargate_optimism_router_eth_contract = optimism_w3.eth.contract(
+    address=stargate_optimism_eth_address,
+    abi=router_eth_abi
+)
+
+
+def get_gasprice_arbitrum():
+    return arbitrum_w3.eth.generate_gas_price()
+
+
+def get_gasprice_optimism():
+    return optimism_w3.eth.generate_gas_price()
 
 
 def get_balance_eth_arbitrum(address):
@@ -47,12 +59,13 @@ def swap_eth_arbitrum_optimism(account, amount):
     address = w3.to_checksum_address(account.address)
     nonce = arbitrum_w3.eth.get_transaction_count(address)
     gas_price = arbitrum_w3.eth.gas_price
-    fees = stargate_arbitrum_router_contract.functions.quoteLayerZeroFee(111,
-                                                                         1,
-                                                                         address,
-                                                                         "0x",
-                                                                         [0, 0, address]
-                                                                         ).call()
+    fees = stargate_arbitrum_router_contract.functions.quoteLayerZeroFee(
+        111,
+        1,
+        address,
+        "0x",
+        [0, 0, address]
+    ).call()
     fee = fees[0]
 
     amountOutMin = amount - (amount * SLIPPAGE) // 1000
@@ -62,7 +75,7 @@ def swap_eth_arbitrum_optimism(account, amount):
     ).build_transaction({
         'from': address,
         'value': amount + fee,
-        'gas': 2000000,
+        'gas': get_gasprice_arbitrum(),
         'gasPrice': gas_price,
         'nonce': nonce,
     })
@@ -76,22 +89,23 @@ def swap_eth_optimism_arbitrum(account, amount):
     address = w3.to_checksum_address(account.address)
     nonce = optimism_w3.eth.get_transaction_count(address)
     gas_price = optimism_w3.eth.gas_price
-    fees = stargate_optimism_router_contract.functions.quoteLayerZeroFee(110,
-                                                                         1,
-                                                                         address,
-                                                                         "0x",
-                                                                         [0, 0, address]
-                                                                         ).call()
+    fees = stargate_optimism_router_contract.functions.quoteLayerZeroFee(
+        110,
+        1,
+        address,
+        "0x",
+        [0, 0, address]
+    ).call()
     fee = fees[0]
 
     amountOutMin = amount - (amount * SLIPPAGE) // 1000
-
+    
     swap_txn = stargate_optimism_router_eth_contract.functions.swapETH(
         110, address, address, amount, amountOutMin
     ).build_transaction({
         'from': address,
         'value': amount + fee,
-        'gas': 2000000,
+        'gas': get_gasprice_optimism(),
         'gasPrice': gas_price,
         'nonce': nonce,
     })

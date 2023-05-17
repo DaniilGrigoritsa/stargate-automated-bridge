@@ -35,6 +35,14 @@ usdc_fantom_contract = fantom_w3.eth.contract(address=usdc_fantom_address, abi=u
 # Polygon -> Fantom USDC Bridge
 
 
+def get_gasprice_polygon():
+    return polygon_w3.eth.generate_gas_price()
+
+
+def get_gasprice_fantom():
+    return fantom_w3.eth.generate_gas_price()
+
+
 def get_balance_usdc_polygon(address):
     return usdc_polygon_contract.functions.balanceOf(address).call()
 
@@ -47,12 +55,13 @@ def swap_usdc_polygon_to_fantom(account, amount):
     address = w3.to_checksum_address(account.address)
     nonce = polygon_w3.eth.get_transaction_count(address)
     gas_price = polygon_w3.eth.gas_price
-    fees = stargate_fantom_contract.functions.quoteLayerZeroFee(112,
-                                                                1,
-                                                                "0x0000000000000000000000000000000000001010",
-                                                                "0x",
-                                                                [0, 0, "0x0000000000000000000000000000000000000001"]
-                                                                ).call()
+    fees = stargate_fantom_contract.functions.quoteLayerZeroFee(
+        112,
+        1,
+        "0x0000000000000000000000000000000000001010",
+        "0x",
+        [0, 0, "0x0000000000000000000000000000000000000001"]
+    ).call()
     fee = fees[0]
 
     # Check allowance
@@ -60,7 +69,7 @@ def swap_usdc_polygon_to_fantom(account, amount):
     if allowance < amount:
         approve_txn = usdc_polygon_contract.functions.approve(stargate_polygon_address, amount).build_transaction({
             'from': address,
-            'gas': 150000,
+            'gas': get_gasprice_polygon(),
             'gasPrice': gas_price,
             'nonce': nonce,
         })
@@ -88,7 +97,7 @@ def swap_usdc_polygon_to_fantom(account, amount):
     ).build_transaction({
         'from': address,
         'value': fee,
-        'gas': 2000000,
+        'gas': get_gasprice_polygon(),
         'gasPrice': polygon_w3.eth.gas_price,
         'nonce': polygon_w3.eth.get_transaction_count(address),
     })
@@ -103,12 +112,13 @@ def swap_usdc_fantom_to_polygon(account, amount):
     address = w3.to_checksum_address(account.address)
     nonce = fantom_w3.eth.get_transaction_count(address)
     gas_price = fantom_w3.eth.gas_price
-    fees = stargate_fantom_contract.functions.quoteLayerZeroFee(109,
-                                                       1,
-                                                       "0x0000000000000000000000000000000000000001",
-                                                       "0x",
-                                                       [0, 0, "0x0000000000000000000000000000000000000001"]
-                                                       ).call()
+    fees = stargate_fantom_contract.functions.quoteLayerZeroFee(
+        109,
+        1,
+        "0x0000000000000000000000000000000000000001",
+        "0x",
+        [0, 0, "0x0000000000000000000000000000000000000001"]
+    ).call()
     fee = fees[0]
 
     # Check Allowance
@@ -116,7 +126,7 @@ def swap_usdc_fantom_to_polygon(account, amount):
     if allowance < amount:
         approve_txn = usdc_fantom_contract.functions.approve(stargate_fantom_address, amount).build_transaction({
             'from': address,
-            'gas': 150000,
+            'gas': get_gasprice_fantom(),
             'gasPrice': gas_price,
             'nonce': nonce,
         })
@@ -144,7 +154,7 @@ def swap_usdc_fantom_to_polygon(account, amount):
     ).build_transaction({
         'from': address,
         'value': fee,
-        'gas': 2000000,
+        'gas': get_gasprice_fantom(),
         'gasPrice': fantom_w3.eth.gas_price,
         'nonce': fantom_w3.eth.get_transaction_count(address),
     })
